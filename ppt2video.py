@@ -37,7 +37,6 @@ import wave
 import contextlib
 import logging
 import traceback
-import pathlib
 try:
     from mutagen.mp3 import MP3
 except:
@@ -70,9 +69,14 @@ def get_audio_duration(audio_file):
         sys.exit('Unexpected audio_file extension - %s' % extn)
 
 def generate_audio(notes_catalog_file):
-    logging.info ("generating audio from speech catalog")
-    result = subprocess.run(['powershell.exe', '.\\text2audio.ps1', notes_catalog_file], stdout=subprocess.PIPE)
-    logging.info (result.stdout.decode('utf-8'))
+    if (sys.version_info.major == 3) and (sys.version_info.minor > 5):
+        logging.info ("generating audio from speech catalog")
+        result = subprocess.run(['powershell.exe', '-ExecutionPolicy',  'Bypass', '-File', '.\\text2audio.ps1', notes_catalog_file], stdout=subprocess.PIPE)
+        logging.info (result.stdout.decode('utf-8'))
+    else:
+        proc = subprocess.Popen(['powershell.exe', '-ExecutionPolicy',  'Bypass', '-File', '.\\text2audio.ps1', notes_catalog_file],stdout=subprocess.PIPE)
+        stdout_value = proc.communicate()[0].decode('utf-8')
+        print('stdout:', repr(stdout_value))
     
 def read_ppt_notes(pptApp, filepath, tutorial_dir, notes_catalog_file):
     try:
@@ -126,8 +130,7 @@ def add_audio_set_timing_genvideo(pptApp, filepath, tutorial_dir, notes_catalog_
             presentation.Slides(nSlide).SlideShowTransition.AdvanceOnTime = True
             presentation.Slides(nSlide).SlideShowTransition.AdvanceTime = duration
             
-            logging.info("audio file: %s" % audiofile)
-            logging.info("file check: %s" % os.path.exists(audiofile))
+            logging.info("audio file: %s, file check: %s" % (audiofile, os.path.exists(audiofile)))
             audiofile_fullpath = os.path.abspath(audiofile)
             oShp = presentation.Slides(nSlide).Shapes.AddMediaObject2(audiofile_fullpath, False, True, 5, 5, 5, 5)
             try:
@@ -156,7 +159,7 @@ def add_audio_set_timing_genvideo(pptApp, filepath, tutorial_dir, notes_catalog_
             logging.info("%s - unable to create" % video_file)
         
         logging.info("video generation is asynchronous. Please close the ppt manually once video is generated")
-        logging.info("please close the ppt in powerpoint application manually")
+        logging.info("please close the ppt in powerpoint application manually after video is created")
         #presentation.Close()
 
     except Exception as e:
@@ -164,14 +167,15 @@ def add_audio_set_timing_genvideo(pptApp, filepath, tutorial_dir, notes_catalog_
         traceback.print_exc()
 
 def do_main():
-    TOOLDIR = pathlib.Path(__file__).parent.absolute()
+    TOOLDIR = os.path.abspath (os.path.dirname(__file__))
+    logging.info("TOOL DIR: %s" % TOOLDIR)
+
     os.chdir(TOOLDIR)
     
     filepath = os.path.join(WORKING_DIRECTORY, PPT_FILE)
     tutorial_dir = os.path.splitext(os.path.basename(filepath))[0] + r'_tutorial'
     notes_catalog_file = tutorial_dir + '/notes_files.md'
     
-    logging.info("TOOL DIR: %s" % TOOLDIR)
     logging.info("PPT DIR: %s" % WORKING_DIRECTORY)
     logging.info("Tutorial material at: %s" % tutorial_dir)
     logging.info("Notes for speech: %s" % notes_catalog_file)
@@ -191,4 +195,3 @@ def do_main():
 
 if __name__ == "__main__":
     do_main()
-    

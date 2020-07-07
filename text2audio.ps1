@@ -15,7 +15,7 @@ function Text2Audio([string]$TextFile, [string]$WavFile) {
 	Add-Type -AssemblyName System.Speech
 	$SpeechSynthesizer = New-Object System.Speech.Synthesis.SpeechSynthesizer
 	#$SpeechSynthesizer.SelectVoice("Microsoft Mark Mobile")
-	$SpeechSynthesizer.Rate = 0  # -10 is slowest, 10 is fastest
+	$SpeechSynthesizer.Rate = -2  # -10 is slowest, 10 is fastest
 	$SpeechSynthesizer.SetOutputToWaveFile($WavFile)
 
 	$SpeechSynthesizer.Speak($Text)
